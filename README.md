@@ -1,3 +1,5 @@
-E-commerce REST API made with: 
+###E-Commerce RESTful API
+######Made using: Java, Jersey, Maven, JDBC, SQL, JUnit, Gson
 
-Java, Maven, Jersey, JDBC, SQL, JUnit, Gson
+RESTful API Backend with Java and Jersey.
+Group coursework for Web-Programming @ YHC3L 2015.
