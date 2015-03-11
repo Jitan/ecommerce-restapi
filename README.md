@@ -1,3 +1,2 @@
 ###j-commerce
-######E-commerce REST API implementation with Java based on Web-Programming course using:
-######Jersey, SQL, JDBC, Maven, JUnit, Gson
+######E-commerce REST API made with: Jersey, JDBC, SQL, Maven, JUnit, Gson
