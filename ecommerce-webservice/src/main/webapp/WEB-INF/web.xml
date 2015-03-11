@@ -17,9 +17,4 @@
 		<servlet-name>ecom-webservice</servlet-name>
 		<url-pattern>/*</url-pattern>
 	</servlet-mapping>
-	<listener>
-		<listener-class>se.groupone.ecommerce.webservice.WebServiceInit</listener-class>
-	</listener>
-
-
 </web-app>
