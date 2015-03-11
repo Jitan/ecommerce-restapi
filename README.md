@@ -1,4 +1,4 @@
 ####j-commerce
 E-commerce REST API made with: 
 
-Jersey, JDBC, SQL, Maven, JUnit, Gson
+Java, Jersey, JDBC, SQL, Maven, JUnit, Gson
