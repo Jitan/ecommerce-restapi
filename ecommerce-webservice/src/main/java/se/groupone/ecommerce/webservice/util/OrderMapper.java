@@ -1,15 +1,8 @@
 package se.groupone.ecommerce.webservice.util;
 
+import com.google.gson.*;
+import com.google.gson.stream.JsonWriter;
 import se.groupone.ecommerce.model.Order;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
@@ -19,19 +12,10 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
-import com.google.gson.stream.JsonWriter;
+import java.io.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 
 @Provider
 @Produces(MediaType.APPLICATION_JSON)
@@ -100,6 +84,8 @@ public final class OrderMapper implements MessageBodyWriter<Order>, MessageBodyR
 				productIdsJsonArray.add(new JsonPrimitive(productId));
 			}
 			orderJson.add("productIds", productIdsJsonArray);
+			orderJson.add("dateCreated", new JsonPrimitive(String.valueOf(order.getDateCreated())));
+			orderJson.add("dateShipped", new JsonPrimitive(String.valueOf(order.getDateShipped())));
 			return orderJson;
 		}
 

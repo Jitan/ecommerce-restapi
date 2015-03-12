@@ -125,8 +125,6 @@ public final class CustomerService extends WebShopService
 		orderList = new ArrayList<Order>(shopService.getOrders(username));
 
 		// GenericEntity is created for IntegerListMapper generic handling
-		return Response.ok(new GenericEntity<ArrayList<Order>>(orderList)
-		{
-		}).build();
+		return Response.ok(new GenericEntity<ArrayList<Order>>(orderList){}).build();
 	}
 }
