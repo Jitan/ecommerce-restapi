@@ -62,46 +62,46 @@ public class SQLProductRepository implements ProductRepository
 	@Override
 	public Product getProduct(final int productID) throws RepositoryException
 	{
-		ResultSet rs;
-		try
+		String getProductQuery = "SELECT * FROM " + dbTable + " WHERE id_product = ?;";
+		ResultSet resultSet;
+		try (Connection con = SQLConnector.getConnection();
+			 PreparedStatement ps = con.prepareStatement(getProductQuery))
 		{
-			StringBuilder getProductQuery = new StringBuilder();
-			getProductQuery
-					.append("SELECT * FROM " + DBConfig.DATABASE + "." + dbTable + " ");
-			getProductQuery.append("WHERE id_product = " + productID + ";");
+			ps.setInt(1, productID);
+			resultSet = ps.executeQuery();
 
-			rs = sql.queryResult(getProductQuery.toString());
-			if (!rs.isBeforeFirst())
+			try
 			{
-				throw new RepositoryException(
-						"No matches for Product found in database!\nSQL QUERY: " + getProductQuery
-								.toString());
+				if (!resultSet.next())
+				{
+					throw new RepositoryException(
+							"No matches for Product with id: " + productID + " found in "
+									+ "database!");
+				}
+				else
+				{
+					final ProductParameters productParams = new ProductParameters(
+							resultSet.getString("title"),
+							resultSet.getString("category"),
+							resultSet.getString("manufacturer"),
+							resultSet.getString("description"),
+							resultSet.getString("img"),
+							resultSet.getDouble("price"),
+							resultSet.getInt("quantity"));
+
+					return new Product(productID, productParams);
+				}
+			}
+			catch (SQLException e)
+			{
+				throw new RepositoryException("Failed to construct Product from database!", e);
 			}
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Failed to retrieve Product data from database!", e);
-		}
-
-		try
-		{
-			rs.next();
-			final ProductParameters productParams = new ProductParameters(
-					rs.getString("title"),
-					rs.getString("category"),
-					rs.getString("manufacturer"),
-					rs.getString("description"),
-					rs.getString("img"),
-					rs.getDouble("price"),
-					rs.getInt("quantity"));
-
-			final Product product = new Product(productID, productParams);
-			rs.close();
-			return product;
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Failed to construct Product from database!", e);
+			throw new RepositoryException(
+					"Failed to retrieve Product data for product with id: " + productID
+							+ " from database!", e);
 		}
 	}
 

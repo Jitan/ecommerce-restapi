@@ -14,7 +14,7 @@ public final class ShopServiceExceptionMapper implements ExceptionMapper<ShopSer
 	public Response toResponse(ShopServiceException e)
 	{
 		e.printStackTrace();
-		return Response.status(Status.BAD_REQUEST).entity("This is from MAPPER: " + e.getMessage())
+		return Response.status(Status.BAD_REQUEST).entity(e.getMessage())
 				.build();
 	}
 }
