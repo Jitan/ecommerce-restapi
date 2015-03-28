@@ -8,11 +8,13 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
 @Provider
-public final class ShopServiceExceptionMapper implements ExceptionMapper<ShopServiceException> 
+public final class ShopServiceExceptionMapper implements ExceptionMapper<ShopServiceException>
 {
 	@Override
 	public Response toResponse(ShopServiceException e)
 	{
-		return Response.status(Status.BAD_REQUEST).entity("This is from MAPPER: " + e.getMessage()).build();
+		e.printStackTrace();
+		return Response.status(Status.BAD_REQUEST).entity("This is from MAPPER: " + e.getMessage())
+				.build();
 	}
 }

@@ -42,7 +42,7 @@ public final class ShopService
 		}
 	}
 
-	public synchronized Product addProduct(ProductParameters productParams)
+	public Product addProduct(ProductParameters productParams)
 	{
 		Product newProduct;
 		try
@@ -65,7 +65,7 @@ public final class ShopService
 		addProductToCustomer(productId, customerUsername, 1);
 	}
 
-	public synchronized void addProductToCustomer(int productId, String customerUsername, int amount)
+	public void addProductToCustomer(int productId, String customerUsername, int amount)
 	{
 		try
 		{
@@ -83,11 +83,12 @@ public final class ShopService
 		}
 		catch (RepositoryException e)
 		{
-			throw new ShopServiceException("Could not add product to customer: " + e.getMessage(), e);
+			throw new ShopServiceException("Could not add product to customer: " + e.getMessage(),
+					e);
 		}
 	}
 
-	public synchronized Product getProductWithId(int productId)
+	public Product getProductWithId(int productId)
 	{
 		try
 		{
@@ -99,7 +100,7 @@ public final class ShopService
 		}
 	}
 
-	public synchronized List<Product> getProducts()
+	public List<Product> getProducts()
 	{
 		try
 		{
@@ -111,7 +112,7 @@ public final class ShopService
 		}
 	}
 
-	public synchronized void removeProduct(int productId)
+	public void removeProduct(int productId)
 	{
 		try
 		{
@@ -142,7 +143,7 @@ public final class ShopService
 		}
 	}
 
-	public synchronized void updateProduct(int productId, ProductParameters productParams)
+	public void updateProduct(int productId, ProductParameters productParams)
 	{
 		try
 		{
@@ -154,7 +155,7 @@ public final class ShopService
 		}
 	}
 
-	public synchronized void addCustomer(Customer customer)
+	public void addCustomer(Customer customer)
 	{
 		try
 		{
@@ -166,7 +167,7 @@ public final class ShopService
 		}
 	}
 
-	public synchronized Customer getCustomer(String customerUsername)
+	public Customer getCustomer(String customerUsername)
 	{
 		try
 		{
@@ -178,7 +179,7 @@ public final class ShopService
 		}
 	}
 
-	public synchronized void updateCustomer(Customer customer)
+	public void updateCustomer(Customer customer)
 	{
 		try
 		{
@@ -190,7 +191,7 @@ public final class ShopService
 		}
 	}
 
-	public synchronized void removeCustomer(String customerUsername)
+	public void removeCustomer(String customerUsername)
 	{
 		try
 		{
@@ -202,7 +203,7 @@ public final class ShopService
 		}
 	}
 
-	public synchronized Order createOrder(String customerUsername)
+	public Order createOrder(String customerUsername)
 	{
 		Order newOrder;
 		try
@@ -248,7 +249,7 @@ public final class ShopService
 		return newOrder;
 	}
 
-	public synchronized Order getOrder(int orderId)
+	public Order getOrder(int orderId)
 	{
 		try
 		{
@@ -261,13 +262,13 @@ public final class ShopService
 		}
 	}
 
-	public synchronized List<Order> getOrders(String customerUsername)
+	public List<Order> getOrders(String customerUsername)
 	{
 		try
 		{
 			customerRepository.getCustomer(customerUsername); // Should throw
-																// exception if
-																// user
+			// exception if
+			// user
 			// does not exist
 			return orderRepository.getOrders(customerUsername);
 		}
@@ -277,7 +278,7 @@ public final class ShopService
 		}
 	}
 
-	public synchronized void updateOrder(Order order)
+	public void updateOrder(Order order)
 	{
 		try
 		{
@@ -289,7 +290,7 @@ public final class ShopService
 		}
 	}
 
-	public synchronized void removeOrder(int orderId)
+	public void removeOrder(int orderId)
 	{
 		try
 		{

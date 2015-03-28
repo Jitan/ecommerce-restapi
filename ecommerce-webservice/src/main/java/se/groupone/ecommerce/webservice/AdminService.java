@@ -1,7 +1,7 @@
 package se.groupone.ecommerce.webservice;
 
 import se.groupone.ecommerce.exception.RepositoryException;
-import se.groupone.ecommerce.repository.sql.DBConnectionConfig;
+import se.groupone.ecommerce.repository.sql.DBConfig;
 import se.groupone.ecommerce.repository.sql.SQLConnector;
 
 import javax.ws.rs.POST;
@@ -22,10 +22,10 @@ public class AdminService extends WebShopService
 	{
 		if (command.equals("reset-repo"))
 		{
-			SQLConnector sql = new SQLConnector(DBConnectionConfig.HOST,
-					DBConnectionConfig.PORT,
-					DBConnectionConfig.USERNAME,
-					DBConnectionConfig.PASSWORD, DBConnectionConfig.DATABASE);
+			SQLConnector sql = new SQLConnector(DBConfig.HOST,
+					DBConfig.PORT,
+					DBConfig.USERNAME,
+					DBConfig.PASSWORD, DBConfig.DATABASE);
 			sql.queryUpdate("TRUNCATE TABLE customer_cart;");
 			sql.queryUpdate("TRUNCATE TABLE order_items;");
 			sql.queryUpdate("TRUNCATE TABLE product;");

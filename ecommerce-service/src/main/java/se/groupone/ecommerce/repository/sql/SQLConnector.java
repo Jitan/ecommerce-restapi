@@ -1,5 +1,7 @@
 package se.groupone.ecommerce.repository.sql;
 
+import se.groupone.ecommerce.exception.RepositoryException;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -10,26 +12,26 @@ public final class SQLConnector
 {
 	private final String sqlDriver = "com.mysql.jdbc.Driver";
 	private final String host,
-						 port,
-						 username,
-						 password,
-						 database;
+			port,
+			username,
+			password,
+			database;
 
 	private Connection con;
 	private Statement statement;
 
 	public SQLConnector(final String host,
-						final String port,
-						final String username,
-						final String password,
-						final String database) throws SQLException
+			final String port,
+			final String username,
+			final String password,
+			final String database) throws SQLException
 	{
 		this.host = host;
 		this.port = port;
 		this.username = username;
 		this.password = password;
 		this.database = database;
-		
+
 		// Checks if sqlDriver is available
 		try
 		{
@@ -39,19 +41,37 @@ public final class SQLConnector
 		{
 			throw new SQLException("Could not load database driver: " + e.getMessage());
 		}
+
 		connect();
+	}
+
+	public static Connection getConnection() throws RepositoryException
+	{
+		try
+		{
+			return DriverManager
+					.getConnection("jdbc:mysql://" + DBConfig.HOST + ":" + DBConfig.PORT + "/"
+							+ DBConfig.DATABASE, DBConfig.USERNAME, DBConfig.PASSWORD);
+		}
+		catch (SQLException e)
+		{
+			throw new RepositoryException(
+					"Could not construct SQLProduct: Could not construct database object", e);
+		}
 	}
 
 	protected void finalize() throws SQLException
 	{
 		disconnect();
 	}
-	
+
 	private void connect() throws SQLException
 	{
 		try
 		{
-			con = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + database, username, password);
+			con = DriverManager
+					.getConnection("jdbc:mysql://" + host + ":" + port + "/" + database, username,
+							password);
 			statement = con.createStatement();
 		}
 		catch (SQLException e)
@@ -97,7 +117,7 @@ public final class SQLConnector
 			throw new SQLException("Error performing query: " + e.getMessage());
 		}
 	}
-	
+
 	public void queryUpdate(final String query) throws SQLException
 	{
 		try

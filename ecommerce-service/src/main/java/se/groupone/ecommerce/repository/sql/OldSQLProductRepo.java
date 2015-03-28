@@ -5,24 +5,23 @@ import se.groupone.ecommerce.model.Product;
 import se.groupone.ecommerce.model.ProductParameters;
 import se.groupone.ecommerce.repository.ProductRepository;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SQLProductRepository implements ProductRepository
+public class OldSQLProductRepo implements ProductRepository
 {
 	private final String dbTable = "product";
 	private final SQLConnector sql;
 
-	public SQLProductRepository() throws RepositoryException
+	public OldSQLProductRepo() throws RepositoryException
 	{
 		try
 		{
-			sql = new SQLConnector(DBConfig.HOST, DBConfig.PORT, DBConfig.USERNAME,
-					DBConfig.PASSWORD, DBConfig.DATABASE);
+			sql = new SQLConnector(DBConfig.HOST, DBConfig.PORT,
+					DBConfig.USERNAME, DBConfig.PASSWORD,
+					DBConfig.DATABASE);
 		}
 		catch (SQLException e)
 		{
@@ -34,24 +33,24 @@ public class SQLProductRepository implements ProductRepository
 	@Override
 	public void addProduct(final Product product) throws RepositoryException
 	{
-		final String addProductQuery =
-				"INSERT INTO " + dbTable + " "
-						+ "(id_product, title, category, manufacturer, description, img, price, "
-						+ "quantity) " + "VALUES(?, ?, ?, ?, ?, ?, ?, ?);";
-
-		try (Connection con = SQLConnector.getConnection();
-			 PreparedStatement ps = con.prepareStatement(addProductQuery))
+		try
 		{
-			ps.setInt(1, product.getId());
-			ps.setString(2, product.getTitle());
-			ps.setString(3, product.getCategory());
-			ps.setString(4, product.getManufacturer());
-			ps.setString(5, product.getDescription());
-			ps.setString(6, product.getImg());
-			ps.setDouble(7, product.getPrice());
-			ps.setInt(8, product.getQuantity());
+			StringBuilder addProductQuery = new StringBuilder();
+			addProductQuery
+					.append("INSERT INTO " + DBConfig.DATABASE + "." + dbTable + " ");
+			addProductQuery
+					.append("(id_product, title, category, manufacturer, description, img, price, "
+							+ "quantity) ");
+			addProductQuery.append("VALUES(" + product.getId() + ", ");
+			addProductQuery.append("'" + product.getTitle() + "', ");
+			addProductQuery.append("'" + product.getCategory() + "', ");
+			addProductQuery.append("'" + product.getManufacturer() + "', ");
+			addProductQuery.append("'" + product.getDescription() + "', ");
+			addProductQuery.append("'" + product.getImg() + "', ");
+			addProductQuery.append("" + product.getPrice() + ", ");
+			addProductQuery.append("" + product.getQuantity() + ");");
 
-			ps.executeUpdate();
+			sql.query(addProductQuery.toString());
 		}
 		catch (SQLException e)
 		{
