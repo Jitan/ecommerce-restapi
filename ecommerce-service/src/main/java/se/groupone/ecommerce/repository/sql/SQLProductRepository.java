@@ -5,10 +5,7 @@ import se.groupone.ecommerce.model.Product;
 import se.groupone.ecommerce.model.ProductParameters;
 import se.groupone.ecommerce.repository.ProductRepository;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,31 +67,24 @@ public class SQLProductRepository implements ProductRepository
 			ps.setInt(1, productID);
 			resultSet = ps.executeQuery();
 
-			try
+			if (!resultSet.next())
 			{
-				if (!resultSet.next())
-				{
-					throw new RepositoryException(
-							"No matches for Product with id: " + productID + " found in "
-									+ "database!");
-				}
-				else
-				{
-					final ProductParameters productParams = new ProductParameters(
-							resultSet.getString("title"),
-							resultSet.getString("category"),
-							resultSet.getString("manufacturer"),
-							resultSet.getString("description"),
-							resultSet.getString("img"),
-							resultSet.getDouble("price"),
-							resultSet.getInt("quantity"));
-
-					return new Product(productID, productParams);
-				}
+				throw new RepositoryException(
+						"No matches for Product with id: " + productID + " found in "
+								+ "database!");
 			}
-			catch (SQLException e)
+			else
 			{
-				throw new RepositoryException("Failed to construct Product from database!", e);
+				final ProductParameters productParams = new ProductParameters(
+						resultSet.getString("title"),
+						resultSet.getString("category"),
+						resultSet.getString("manufacturer"),
+						resultSet.getString("description"),
+						resultSet.getString("img"),
+						resultSet.getDouble("price"),
+						resultSet.getInt("quantity"));
+
+				return new Product(productID, productParams);
 			}
 		}
 		catch (SQLException e)
@@ -108,74 +98,45 @@ public class SQLProductRepository implements ProductRepository
 	@Override
 	public List<Product> getProducts() throws RepositoryException
 	{
-		ResultSet rs;
-		final int numRows;
-		try
-		{
-			final String numRowsQuery =
-					"SELECT count(id_product) FROM " + DBConfig.DATABASE + "." + dbTable
-							+ ";";
+		String getProductQuery = "SELECT * FROM " + dbTable + ";";
+		ResultSet resultSet;
+		List<Product> productList = new ArrayList<>();
 
-			rs = sql.queryResult(numRowsQuery);
-			if (!rs.isBeforeFirst())
+		try (Connection con = SQLConnector.getConnection();
+			 Statement statement = con.createStatement())
+		{
+			resultSet = statement.executeQuery(getProductQuery);
+
+			boolean resultSetIsEmpty = true;
+
+			while (resultSet.next())
 			{
-				throw new RepositoryException(
-						"No matches COUNT(id_product) in products!\nSQL QUERY: " + numRowsQuery);
+				resultSetIsEmpty = false;
+
+				final int productID = resultSet.getInt("id_product");
+				final ProductParameters productParams = new ProductParameters(
+						resultSet.getString("title"),
+						resultSet.getString("category"),
+						resultSet.getString("manufacturer"),
+						resultSet.getString("description"),
+						resultSet.getString("img"),
+						resultSet.getDouble("price"),
+						resultSet.getInt("quantity"));
+
+				productList.add(new Product(productID, productParams));
 			}
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("No ProductCount recieved from database!", e);
-		}
 
-		try
-		{
-			rs.next();
-			numRows = rs.getInt(1);
-			rs.close();
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException(
-					"Could not parse COUNT(id_product) from Product database!", e);
-		}
-
-		try
-		{
-			final String fetchAllQuery =
-					"SELECT * FROM " + DBConfig.DATABASE + "." + dbTable + ";";
-			rs = sql.queryResult(fetchAllQuery);
+			if (resultSetIsEmpty)
+			{
+				throw new RepositoryException("No products in database!");
+			}
 		}
 		catch (SQLException e)
 		{
 			throw new RepositoryException("Could not fetch all Products from database!", e);
 		}
 
-		try
-		{
-			List<Product> productList = new ArrayList<>();
-			for (int i = 0; i < numRows; i++)
-			{
-				rs.next();
-				final int productID = rs.getInt("id_product");
-				final ProductParameters productParams = new ProductParameters(
-						rs.getString("title"),
-						rs.getString("category"),
-						rs.getString("manufacturer"),
-						rs.getString("description"),
-						rs.getString("img"),
-						rs.getDouble("price"),
-						rs.getInt("quantity"));
-				final Product product = new Product(productID, productParams);
-				productList.add(product);
-			}
-			rs.close();
-			return productList;
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Could not parse Products in database!", e);
-		}
+		return productList;
 	}
 
 	@Override
