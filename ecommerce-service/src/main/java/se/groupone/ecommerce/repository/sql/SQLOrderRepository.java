@@ -1,20 +1,20 @@
 package se.groupone.ecommerce.repository.sql;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 import se.groupone.ecommerce.exception.RepositoryException;
 import se.groupone.ecommerce.model.Order;
 import se.groupone.ecommerce.repository.OrderRepository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
 public class SQLOrderRepository implements OrderRepository
 {
 	private final String dbTableOrders = "order";
-	private final String dbTableOrderItems = "order_items";
+	private final String dbTableOrderItems = "product_order";
 	private final SQLConnector sql;
 	private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 

@@ -67,6 +67,14 @@ public class OrderServiceTest
 	private Response createProductTomatoResponse;
 	private Response createCustomerAlexResponse;
 
+	@AfterClass
+	public static void tearDown()
+	{
+		// Truncate repository tables after all tests are done
+		WebTarget admin = client.target(URL_BASE + "/admin");
+		admin.request().buildPost(Entity.entity("reset-repo", MediaType.TEXT_HTML)).invoke();
+	}
+
 	@Before
 	public void init()
 	{
@@ -235,11 +243,4 @@ public class OrderServiceTest
 		assertEquals(400, thisShouldFailResponse.getStatus());
 	}
 
-	@AfterClass
-	public static void tearDown()
-	{
-		// Truncate repository tables after all tests are done
-		WebTarget admin = client.target(URL_BASE + "/admin");
-		admin.request().buildPost(Entity.entity("reset-repo", MediaType.TEXT_HTML)).invoke();
-	}
 }

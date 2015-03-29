@@ -26,11 +26,13 @@ public class AdminService extends WebShopService
 					DBConfig.PORT,
 					DBConfig.USERNAME,
 					DBConfig.PASSWORD, DBConfig.DATABASE);
+			sql.query("SET FOREIGN_KEY_CHECKS = 0;");
 			sql.queryUpdate("TRUNCATE TABLE customer_cart;");
-			sql.queryUpdate("TRUNCATE TABLE order_items;");
+			sql.queryUpdate("TRUNCATE TABLE product_order;");
 			sql.queryUpdate("TRUNCATE TABLE product;");
 			sql.queryUpdate("TRUNCATE TABLE `order`;");
 			sql.queryUpdate("TRUNCATE TABLE customer;");
+			sql.query("SET FOREIGN_KEY_CHECKS = 1;");
 
 			return Response.ok("SQLRepo has been reset").build();
 

@@ -58,7 +58,7 @@ public final class SQLCustomerRepository implements CustomerRepository
 			for (int i = 0; i < productIds.size(); i++)
 			{
 				customerCartQuery.append("INSERT INTO " + DBConfig.DATABASE + "." + dbCustomerItems + " ");
-				customerCartQuery.append("(id_item, user_name) ");
+				customerCartQuery.append("(id_product, user_name) ");
 				customerCartQuery.append("VALUES(" + productIds.get(i) + ", ");
 				customerCartQuery.append("'" + customer.getUsername() + "'); ");
 
@@ -115,13 +115,13 @@ public final class SQLCustomerRepository implements CustomerRepository
 		try
 		{
 			StringBuilder numCartItemsQuery = new StringBuilder();
-			numCartItemsQuery.append("SELECT COUNT(id_item) FROM " + DBConfig.DATABASE + "." + dbCustomerItems + " ");
+			numCartItemsQuery.append("SELECT COUNT(id_product) FROM " + DBConfig.DATABASE + "." + dbCustomerItems + " ");
 			numCartItemsQuery.append("WHERE user_name = '" + username + "';");
 
 			rs = sql.queryResult(numCartItemsQuery.toString());
 			if (!rs.isBeforeFirst())
 			{
-				throw new RepositoryException("No matches COUNT(id_item)In Customer shopping cart!\nSQL QUERY: " + numCartItemsQuery.toString());
+				throw new RepositoryException("No matches COUNT(id_product)In Customer shopping cart!\nSQL QUERY: " + numCartItemsQuery.toString());
 			}
 		}
 		catch (SQLException e)
@@ -143,7 +143,7 @@ public final class SQLCustomerRepository implements CustomerRepository
 		try
 		{
 			StringBuilder cartItemsQuery = new StringBuilder();
-			cartItemsQuery.append("SELECT id_item FROM " + DBConfig.DATABASE + "." + dbCustomerItems + " ");
+			cartItemsQuery.append("SELECT id_product FROM " + DBConfig.DATABASE + "." + dbCustomerItems + " ");
 			cartItemsQuery.append("WHERE user_name = '" + username + "';");
 
 			rs = sql.queryResult(cartItemsQuery.toString());
@@ -278,7 +278,7 @@ public final class SQLCustomerRepository implements CustomerRepository
 			for (int i = 0; i < productIds.size(); i++)
 			{
 				customerCartQuery.append("INSERT INTO " + DBConfig.DATABASE + "." + dbCustomerItems + " ");
-				customerCartQuery.append("(id_item, user_name) ");
+				customerCartQuery.append("(id_product, user_name) ");
 				customerCartQuery.append("VALUES(" + productIds.get(i) + ", ");
 				customerCartQuery.append("'" + customer.getUsername() + "'); ");
 
