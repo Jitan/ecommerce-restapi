@@ -1,21 +1,13 @@
 package se.groupone.ecommerce.test.webservice;
 
-import static se.groupone.ecommerce.test.webservice.ConnectionConfig.*;
-
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Test;
 import se.groupone.ecommerce.model.Customer;
 import se.groupone.ecommerce.model.Order;
 import se.groupone.ecommerce.model.Product;
 import se.groupone.ecommerce.model.ProductParameters;
-import se.groupone.ecommerce.webservice.util.CustomerMapper;
-import se.groupone.ecommerce.webservice.util.IntegerListMapper;
-import se.groupone.ecommerce.webservice.util.OrderMapper;
-import se.groupone.ecommerce.webservice.util.ProductMapper;
-import se.groupone.ecommerce.webservice.util.ProductParamMapper;
-
-import static org.junit.Assert.assertEquals;
-
-import java.io.IOException;
-import java.util.ArrayList;
+import se.groupone.ecommerce.webservice.util.*;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -23,10 +15,11 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.util.ArrayList;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static se.groupone.ecommerce.test.webservice.ConnectionConfig.*;
 
 public class OrderServiceTest
 {
@@ -39,12 +32,16 @@ public class OrderServiceTest
 			.build();
 
 	// Models
-	private static final Customer CUSTOMER_ALEX = new Customer("alex", "password", "alex@email.com", "Alexander",
+	private static final Customer CUSTOMER_ALEX = new Customer("alex", "password", "alex@email"
+			+ ".com",
+			"Alexander",
 			"Sol", "Banangatan 1", "543211");
-	private static final ProductParameters PRODUCT_PARAMETERS_TOMATO = new ProductParameters("Tomato", "Vegetables",
+	private static final ProductParameters PRODUCT_PARAMETERS_TOMATO = new ProductParameters(
+			"Tomato", "Vegetables",
 			"Spain", "A beautiful tomato",
 			"http://google.com/tomato.jpg", 45, 500);
-	private static final ProductParameters PRODUCT_PARAMETERS_LETTUCE = new ProductParameters("Lettuce", "Vegetables",
+	private static final ProductParameters PRODUCT_PARAMETERS_LETTUCE = new ProductParameters(
+			"Lettuce", "Vegetables",
 			"France", "A mound of lettuce",
 			"http://altavista.com/lettuce.jpg", 88, 200);
 
@@ -52,10 +49,16 @@ public class OrderServiceTest
 	private static final WebTarget CUSTOMERS_TARGET;
 	private static final WebTarget PRODUCTS_TARGET;
 	private static final WebTarget ORDERS_TARGET;
+
 	static
 	{
+		// http://localhost:8080/ecommerce-webservice/customers
 		CUSTOMERS_TARGET = client.target(CUSTOMERS_URL);
+
+		// http://localhost:8080/ecommerce-webservice/products
 		PRODUCTS_TARGET = client.target(PRODUCTS_URL);
+
+		// http://localhost:8080/ecommerce-webservice/orders
 		ORDERS_TARGET = client.target(ORDERS_URL);
 	}
 
@@ -89,18 +92,13 @@ public class OrderServiceTest
 		assertEquals(201, createCustomerAlexResponse.getStatus());
 	}
 
-	@AfterClass
-	public static void tearDown()
-	{
-		// Truncate repository tables after all tests are done
-		WebTarget admin = client.target(URL_BASE + "/admin");
-		admin.request().buildPost(Entity.entity("reset-repo", MediaType.TEXT_HTML)).invoke();
-	}
-
 	//  Skapa en order för en användare
+	// TODO Should assert product stock count before and after order
 	@Test
 	public void canCreateCustomerOrder() throws IOException
 	{
+		final int numberOfItemsToOrder = 8;
+
 		final Product PRODUCT_TOMATO = client.target(createProductTomatoResponse.getLocation())
 				.request(MediaType.APPLICATION_JSON)
 				.get(Product.class);
@@ -109,8 +107,10 @@ public class OrderServiceTest
 		final Response addProductsToCartResponse = CUSTOMERS_TARGET
 				.path(CUSTOMER_ALEX.getUsername())
 				.path("cart")
+				.queryParam("amount", numberOfItemsToOrder)
 				.request()
-				.buildPost(Entity.entity(Integer.toString(PRODUCT_TOMATO.getId()), MediaType.APPLICATION_JSON))
+				.buildPost(Entity.entity(Integer.toString(PRODUCT_TOMATO.getId()),
+						MediaType.APPLICATION_JSON))
 				.invoke();
 		assertEquals(201, addProductsToCartResponse.getStatus());
 
@@ -127,6 +127,14 @@ public class OrderServiceTest
 				.get(Order.class);
 
 		assertEquals(PRODUCT_TOMATO.getId(), (int) createdOrder.getProductIds().get(0));
+
+		// GET - Retrieve product form repository again and check stock quantity
+		final Product updatedProductFromRepo = client
+				.target(createProductTomatoResponse.getLocation())
+				.request(MediaType.APPLICATION_JSON)
+				.get(Product.class);
+		assertEquals(PRODUCT_TOMATO.getQuantity() - numberOfItemsToOrder,
+				updatedProductFromRepo.getQuantity());
 	}
 
 	//  Uppdatera en order för en användare
@@ -142,7 +150,8 @@ public class OrderServiceTest
 				.path(CUSTOMER_ALEX.getUsername())
 				.path("cart")
 				.request()
-				.buildPost(Entity.entity(Integer.toString(PRODUCT_TOMATO.getId()), MediaType.APPLICATION_JSON))
+				.buildPost(Entity.entity(Integer.toString(PRODUCT_TOMATO.getId()),
+						MediaType.APPLICATION_JSON))
 				.invoke();
 		assertEquals(201, addProductsToCartResponse.getStatus());
 
@@ -164,7 +173,8 @@ public class OrderServiceTest
 		ArrayList<Integer> newShoppingCart = new ArrayList<Integer>();
 		newShoppingCart.add(PRODUCT_TOMATO.getId());
 		newShoppingCart.add(PRODUCT_TOMATO.getId());
-		Order updatedOrder = new Order(createdOrder.getId(), CUSTOMER_ALEX.getUsername(), newShoppingCart);
+		Order updatedOrder = new Order(createdOrder.getId(), CUSTOMER_ALEX.getUsername(),
+				newShoppingCart);
 
 		final Response updateOrderResponse = ORDERS_TARGET
 				.request()
@@ -192,7 +202,8 @@ public class OrderServiceTest
 				.path(CUSTOMER_ALEX.getUsername())
 				.path("cart")
 				.request()
-				.buildPost(Entity.entity(Integer.toString(PRODUCT_TOMATO.getId()), MediaType.APPLICATION_JSON))
+				.buildPost(Entity.entity(Integer.toString(PRODUCT_TOMATO.getId()),
+						MediaType.APPLICATION_JSON))
 				.invoke();
 		assertEquals(201, addProductsToCartResponse.getStatus());
 
@@ -222,5 +233,13 @@ public class OrderServiceTest
 				.request()
 				.get();
 		assertEquals(400, thisShouldFailResponse.getStatus());
+	}
+
+	@AfterClass
+	public static void tearDown()
+	{
+		// Truncate repository tables after all tests are done
+		WebTarget admin = client.target(URL_BASE + "/admin");
+		admin.request().buildPost(Entity.entity("reset-repo", MediaType.TEXT_HTML)).invoke();
 	}
 }
