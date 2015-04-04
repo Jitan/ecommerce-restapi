@@ -116,25 +116,6 @@ public final class ShopService
 	{
 		try
 		{
-			try
-			{
-				// If there are any customers first remove the item from their
-				// carts
-				for (Customer c : customerRepository.getCustomers())
-				{
-					boolean aProductWasRemoved = c.removeProductsWithIdFromShoppingCart(productId);
-					if (aProductWasRemoved)
-					{
-						updateCustomer(c);
-					}
-				}
-
-			}
-			catch (Exception e) // TODO Be more specific and handle exception
-			{
-				// No users in DB - no action needed
-			}
-
 			productRepository.removeProduct(productId);
 		}
 		catch (RepositoryException e)

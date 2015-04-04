@@ -1,19 +1,18 @@
 package se.groupone.ecommerce.test.webservice;
 
-import static se.groupone.ecommerce.test.webservice.ConnectionConfig.*;
-
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Test;
+import se.groupone.ecommerce.model.Customer;
 import se.groupone.ecommerce.model.Product;
 import se.groupone.ecommerce.model.ProductParameters;
+import se.groupone.ecommerce.webservice.util.CustomerMapper;
 import se.groupone.ecommerce.webservice.util.ProductMapper;
 import se.groupone.ecommerce.webservice.util.ProductParamMapper;
-
-import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -22,21 +21,24 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static se.groupone.ecommerce.test.webservice.ConnectionConfig.CUSTOMERS_URL;
+import static se.groupone.ecommerce.test.webservice.ConnectionConfig.PRODUCTS_URL;
 
 public final class ProductServiceTest
 {
 	private static final Client client = ClientBuilder.newBuilder()
 			.register(ProductMapper.class)
 			.register(ProductParamMapper.class)
+			.register(CustomerMapper.class)
 			.build();
 
 	// Models
@@ -46,12 +48,16 @@ public final class ProductServiceTest
 	private static final ProductParameters PRODUCT_PARAMETERS_LETTUCE = new ProductParameters("Lettuce", "Vegetables",
 			"France", "A mound of lettuce",
 			"http://altavista.com/lettuce.jpg", 88, 200);
+	private static final Customer CUSTOMER_ALEX = new Customer("alex", "password", "alex@email.com", "Alexander",
+			"Sol", "Banangatan 1", "543211");
 
 	// Resource targets
 	private static final WebTarget PRODUCTS_TARGET;
+	private static final WebTarget CUSTOMERS_TARGET;
 	static
 	{
 		PRODUCTS_TARGET = client.target(PRODUCTS_URL);
+		CUSTOMERS_TARGET = client.target(CUSTOMERS_URL);
 	}
 
 	@Before
@@ -176,8 +182,14 @@ public final class ProductServiceTest
 
 	//  Ta bort en produkt (eller sätta den som inaktiv)
 	@Test
-	public void canDeleteAProduct() throws IOException
+	public void canRemoveProduct() throws IOException
 	{
+		// POST - Create customer
+		Response response = CUSTOMERS_TARGET.request(MediaType.APPLICATION_JSON)
+				.buildPost(Entity.entity(CUSTOMER_ALEX, MediaType.APPLICATION_JSON))
+				.invoke();
+		assertEquals(201, response.getStatus());
+
 		// POST - Create products
 		Response createProductResponse = PRODUCTS_TARGET.request(MediaType.APPLICATION_JSON)
 				.buildPost(Entity.entity(PRODUCT_PARAMETERS_TOMATO, MediaType.APPLICATION_JSON))
@@ -187,6 +199,16 @@ public final class ProductServiceTest
 		final Product PRODUCT_TOMATO = client.target(createProductResponse.getLocation())
 				.request(MediaType.APPLICATION_JSON)
 				.get(Product.class);
+
+		// POST - Add products to cart
+		final Response addProductsToCartResponse = CUSTOMERS_TARGET
+				.path(CUSTOMER_ALEX.getUsername())
+				.path("cart")
+				.request()
+				.buildPost(Entity.entity(Integer.toString(PRODUCT_TOMATO.getId()),
+						MediaType.APPLICATION_JSON))
+				.invoke();
+		assertEquals(201, addProductsToCartResponse.getStatus());
 
 		// GET
 		Product createdProduct = client.target(createProductResponse.getLocation())
@@ -203,5 +225,13 @@ public final class ProductServiceTest
 		Response getDeletedProductResponse = client.target(createProductResponse.getLocation())
 				.request(MediaType.APPLICATION_JSON).get();
 		assertThat(getDeletedProductResponse.getStatus(), is(Status.BAD_REQUEST.getStatusCode()));
+
+		// GET - Check that product has also been removed from customer Cart
+		Customer createdCustomer = CUSTOMERS_TARGET.path(CUSTOMER_ALEX.getUsername())
+				.request(MediaType.APPLICATION_JSON)
+				.get(Customer.class);
+		assertEquals(createdCustomer, CUSTOMER_ALEX);
+
+		assertTrue(createdCustomer.getShoppingCart().isEmpty());
 	}
 }

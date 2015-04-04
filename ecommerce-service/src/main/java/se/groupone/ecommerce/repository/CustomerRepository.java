@@ -7,6 +7,12 @@ import java.util.List;
 
 public interface CustomerRepository
 {
+	/**
+	 * Ignores shoppingCart when creating a new customer
+	 *
+	 * @param customer
+	 * @throws RepositoryException
+	 */
 	public void addCustomer(Customer customer) throws RepositoryException;
 
 	public Customer getCustomer(String customerUsername) throws RepositoryException;

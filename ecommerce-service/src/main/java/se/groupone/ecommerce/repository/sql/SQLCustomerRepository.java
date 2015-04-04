@@ -1,324 +1,241 @@
 package se.groupone.ecommerce.repository.sql;
 
-import se.groupone.ecommerce.model.Customer;
-import se.groupone.ecommerce.repository.CustomerRepository;
 import se.groupone.ecommerce.exception.RepositoryException;
+import se.groupone.ecommerce.model.Customer;
+import se.groupone.ecommerce.model.ShoppingCart;
+import se.groupone.ecommerce.repository.CustomerRepository;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public final class SQLCustomerRepository implements CustomerRepository
 {
 	private final SQLConnector sql;
-	private final String dbCustomer = "customer";
-	private final String dbCustomerItems = "customer_cart";
+	private final String customerTableName = "customer";
+	private final String customerCartTableName = "customer_cart";
 
 	public SQLCustomerRepository() throws RepositoryException
 	{
 		try
 		{
-			sql = new SQLConnector(DBConfig.HOST, DBConfig.PORT, DBConfig.USERNAME, DBConfig.PASSWORD, DBConfig.DATABASE);
+			sql = new SQLConnector(DBConfig.HOST, DBConfig.PORT, DBConfig.USERNAME,
+					DBConfig.PASSWORD, DBConfig.DATABASE);
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not construct SQLCustomer: Could not construct database object", e);
+			throw new RepositoryException(
+					"Could not construct SQLCustomer: Could not construct database object", e);
 		}
 	}
 
 	@Override
 	public void addCustomer(final Customer customer) throws RepositoryException
 	{
-		try
-		{
-			// TODO Use prepared statements instead of StringBuilder
-			StringBuilder customerQuery = new StringBuilder();
-			customerQuery.append("INSERT INTO " + DBConfig.DATABASE + "." + dbCustomer + " ");
-			customerQuery.append("(user_name, password, email, first_name, last_name, address, phone) ");
-			customerQuery.append("VALUES('" + customer.getUsername() + "', ");
-			customerQuery.append("'" + customer.getPassword() + "', ");
-			customerQuery.append("'" + customer.getEmail() + "', ");
-			customerQuery.append("'" + customer.getFirstName() + "', ");
-			customerQuery.append("'" + customer.getLastName() + "', ");
-			customerQuery.append("'" + customer.getAddress() + "', ");
-			customerQuery.append("'" + customer.getPhoneNumber() + "');");
+		final String addProductQuery =
+				"INSERT INTO " + customerTableName + " "
+						+ "(user_name, password, email, first_name, last_name, address, phone) "
+						+ "VALUES(?, ?, ?, ?, ?, ?, ?);";
 
-			sql.query(customerQuery.toString());
+		try (Connection con = SQLConnector.getConnection();
+			 PreparedStatement ps = con.prepareStatement(addProductQuery))
+		{
+			ps.setString(1, customer.getUsername());
+			ps.setString(2, customer.getPassword());
+			ps.setString(3, customer.getEmail());
+			ps.setString(4, customer.getFirstName());
+			ps.setString(5, customer.getLastName());
+			ps.setString(6, customer.getAddress());
+			ps.setString(7, customer.getPhoneNumber());
+
+			ps.executeUpdate();
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not add Customer to database!", e);
-		}
-
-		ArrayList<Integer> productIds = customer.getShoppingCart();
-		try
-		{
-			StringBuilder customerCartQuery = new StringBuilder();
-			for (int i = 0; i < productIds.size(); i++)
-			{
-				customerCartQuery.append("INSERT INTO " + DBConfig.DATABASE + "." + dbCustomerItems + " ");
-				customerCartQuery.append("(id_product, user_name) ");
-				customerCartQuery.append("VALUES(" + productIds.get(i) + ", ");
-				customerCartQuery.append("'" + customer.getUsername() + "'); ");
-
-				sql.query(customerCartQuery.toString());
-				customerCartQuery.delete(0, customerCartQuery.length());
-			}
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Could not add Shopping cart IDs to Customer!" + e.getMessage(), e);
+			throw new RepositoryException("Could not add Product to database!", e);
 		}
 	}
 
 	@Override
 	public Customer getCustomer(final String username) throws RepositoryException
 	{
-		ResultSet rs;
-		try
-		{
-			StringBuilder customerQuery = new StringBuilder();
-			customerQuery.append("SELECT * FROM " + DBConfig.DATABASE + "." + dbCustomer + " ");
-			customerQuery.append("WHERE user_name = '" + username + "';");
-
-			rs = sql.queryResult(customerQuery.toString());
-			if (!rs.isBeforeFirst())
-			{
-				throw new RepositoryException("No matches for Customer found in database!\nSQL QUERY: " + customerQuery.toString());
-			}
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Failed to retrieve Customer data from database!", e);
-		}
-
 		Customer customer;
-		try
+		String getCustomerQuery = "SELECT * FROM " + customerTableName + " WHERE user_name = ?;";
+		try (Connection con = SQLConnector.getConnection();
+			 PreparedStatement ps = con.prepareStatement(getCustomerQuery))
 		{
-			rs.next();
-			customer = new Customer(rs.getString("user_name"),
-					rs.getString("password"),
-					rs.getString("email"),
-					rs.getString("first_name"),
-					rs.getString("last_name"),
-					rs.getString("address"),
-					rs.getString("phone"));
-			rs.close();
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Failed to construct Customer from database!", e);
-		}
+			ps.setString(1, username);
+			ResultSet resultSet = ps.executeQuery();
 
-		final int numCartItems;
-		try
-		{
-			StringBuilder numCartItemsQuery = new StringBuilder();
-			numCartItemsQuery.append("SELECT COUNT(id_product) FROM " + DBConfig.DATABASE + "." + dbCustomerItems + " ");
-			numCartItemsQuery.append("WHERE user_name = '" + username + "';");
-
-			rs = sql.queryResult(numCartItemsQuery.toString());
-			if (!rs.isBeforeFirst())
+			if (resultSet.next())
 			{
-				throw new RepositoryException("No matches COUNT(id_product)In Customer shopping cart!\nSQL QUERY: " + numCartItemsQuery.toString());
+				customer = makeCustomerFromResultSet(resultSet);
+
+				ShoppingCart shoppingCartFromDB = getCustomerCartFromDB(customer.getUsername());
+				customer.replaceShoppingCart(shoppingCartFromDB);
+
+				return customer;
 			}
+
+			throw new RepositoryException(
+					"No matches for user: " + username + " found in database!");
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Failed to count items in Customer Shopping Cart!", e);
+			throw new RepositoryException(
+					"Failed to retrieve customer with username: " + username
+							+ " from database!", e);
 		}
+	}
 
-		try
-		{
-			rs.next();
-			numCartItems = rs.getInt(1);
-			rs.close();
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Failed to parse count items in Customer Shopping Cart!", e);
-		}
-
-		try
-		{
-			StringBuilder cartItemsQuery = new StringBuilder();
-			cartItemsQuery.append("SELECT id_product FROM " + DBConfig.DATABASE + "." + dbCustomerItems + " ");
-			cartItemsQuery.append("WHERE user_name = '" + username + "';");
-
-			rs = sql.queryResult(cartItemsQuery.toString());
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Failed to retrieve Customer shopping cart data!", e);
-		}
-
-		try
-		{
-			for (int i = 0; i < numCartItems; i++)
-			{
-				rs.next();
-				customer.addProductToShoppingCart(rs.getInt(1));
-			}
-			rs.close();
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Failed to parse Shopping cart data!", e);
-		}
+	private Customer makeCustomerFromResultSet(ResultSet resultSet)
+			throws SQLException, RepositoryException
+	{
+		Customer customer = new Customer(resultSet.getString("user_name"),
+				resultSet.getString("password"),
+				resultSet.getString("email"),
+				resultSet.getString("first_name"),
+				resultSet.getString("last_name"),
+				resultSet.getString("address"),
+				resultSet.getString("phone"));
 		return customer;
+	}
+
+	private ShoppingCart getCustomerCartFromDB(String username) throws RepositoryException
+	{
+		String getCartItemsQuery =
+				"SELECT * FROM " + customerCartTableName + " WHERE user_name = ?;";
+		ShoppingCart shoppingCart = new ShoppingCart();
+
+		try (Connection con = SQLConnector.getConnection();
+			 PreparedStatement ps = con.prepareStatement(getCartItemsQuery))
+		{
+			ps.setString(1, username);
+			ResultSet resultSet = ps.executeQuery();
+
+			while (resultSet.next())
+			{
+				shoppingCart.addProduct(resultSet.getInt(2));
+			}
+
+			return shoppingCart;
+		}
+		catch (SQLException e)
+		{
+			throw new RepositoryException(
+					"Failed to retrieve customer shoppingCart for user with username: "
+							+ username, e);
+		}
 	}
 
 	@Override
 	public List<Customer> getCustomers() throws RepositoryException
 	{
-		ResultSet rs;
-		final int numRows;
-		try
-		{
-			final String numRowsQuery = "SELECT COUNT(user_name) FROM " + DBConfig.DATABASE + "." + dbCustomer + ";";
-			rs = sql.queryResult(numRowsQuery);
-			if (!rs.isBeforeFirst())
-			{
-				throw new RepositoryException("No matches for user_name in Customers!\nSQL QUERY: " + numRowsQuery);
-			}
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Could not count all Customers usernames from database!", e);
-		}
-
-		try
-		{
-			rs.next();
-			numRows = rs.getInt(1);
-			rs.close();
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Could not parse count value from all Customers usernames in database!", e);
-		}
-
-		try
-		{
-			final String allCustomersQuery = "SELECT user_name FROM " + DBConfig.DATABASE + "." + dbCustomer + ";";
-			rs = sql.queryResult(allCustomersQuery);
-			if (!rs.isBeforeFirst())
-			{
-				throw new RepositoryException("No matches for user_name in Customers!\nSQL QUERY: " + allCustomersQuery);
-			}
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Could not fetch all Customers usernames from database!", e);
-		}
-
-		String allUserNames[] = new String[numRows];
-		try
-		{
-			for (int i = 0; i < numRows; i++)
-			{
-				rs.next();
-				allUserNames[i] = rs.getString(1);
-			}
-			rs.close();
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Could not parse all Customer user names!", e);
-		}
-
+		String getAllCustomersQuery = "SELECT * FROM " + customerTableName + ";";
 		List<Customer> customerList = new ArrayList<>();
-		for (int i = 0; i < numRows; i++)
+
+		try (Connection con = SQLConnector.getConnection();
+			 Statement statement = con.createStatement())
 		{
-			customerList.add(getCustomer(allUserNames[i]));
+			ResultSet resultSet = statement.executeQuery(getAllCustomersQuery);
+
+			boolean resultSetIsEmpty = true;
+			while (resultSet.next())
+			{
+				resultSetIsEmpty = false;
+				Customer customer = makeCustomerFromResultSet(resultSet);
+
+				ShoppingCart shoppingCartFromDB = getCustomerCartFromDB(customer.getUsername());
+				customer.replaceShoppingCart(shoppingCartFromDB);
+
+				customerList.add(customer);
+			}
+			if (resultSetIsEmpty)
+			{
+				throw new RepositoryException("No customers in database!");
+			}
 		}
+		catch (SQLException e)
+		{
+			throw new RepositoryException("Could not fetch all Customers from database!", e);
+		}
+
 		return customerList;
 	}
 
 	@Override
 	public void updateCustomer(final Customer customer) throws RepositoryException
 	{
-		try
-		{
-			StringBuilder updateCustomerQuery = new StringBuilder();
-			updateCustomerQuery.append("UPDATE " + DBConfig.DATABASE + "." + dbCustomer + " SET ");
-			updateCustomerQuery.append("password = '" + customer.getPassword() + "', ");
-			updateCustomerQuery.append("email = '" + customer.getEmail() + "', ");
-			updateCustomerQuery.append("first_name = '" + customer.getFirstName() + "', ");
-			updateCustomerQuery.append("last_name = '" + customer.getLastName() + "', ");
-			updateCustomerQuery.append("address = '" + customer.getAddress() + "', ");
-			updateCustomerQuery.append("phone = '" + customer.getPhoneNumber() + "' ");
-			updateCustomerQuery.append("WHERE user_name = '" + customer.getUsername() + "';");
+		final String addProductQuery =
+				"UPDATE " + customerTableName
+						+ " SET password = ?, email = ?, first_name = ?, "
+						+ "last_name = ?, address = ? , phone = ? WHERE user_name = ?;";
 
-			sql.query(updateCustomerQuery.toString());
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Could not query Customer update!", e);
-		}
+		final String deleteOldCartQuery =
+				"DELETE FROM " + customerCartTableName + " WHERE user_name = ?;";
 
-		try
-		{
-			StringBuilder removeCartItems = new StringBuilder();
-			removeCartItems.append("DELETE FROM " + DBConfig.DATABASE + "." + dbCustomerItems + " ");
-			removeCartItems.append("WHERE user_name = '" + customer.getUsername() + "';");
+		final String insertNewCartItemQuery =
+				"INSERT INTO " + customerCartTableName + " (id_product, user_name) VALUES (?, ?)";
 
-			sql.query(removeCartItems.toString());
-		}
-		catch (SQLException e)
+		try (Connection con = SQLConnector.getConnection())
 		{
-			throw new RepositoryException("Could not query Customer Items deletion!", e);
-		}
-
-		ArrayList<Integer> productIds = customer.getShoppingCart();
-		try
-		{
-			StringBuilder customerCartQuery = new StringBuilder();
-			for (int i = 0; i < productIds.size(); i++)
+			con.setAutoCommit(false);
+			try (PreparedStatement prepStmtUpdateProduct = con.prepareStatement(addProductQuery);
+				 PreparedStatement prepStmtDeleteOldCart =
+						 con.prepareStatement(deleteOldCartQuery);
+				 PreparedStatement prepStmtInsertCartItem = con
+						 .prepareStatement(insertNewCartItemQuery))
 			{
-				customerCartQuery.append("INSERT INTO " + DBConfig.DATABASE + "." + dbCustomerItems + " ");
-				customerCartQuery.append("(id_product, user_name) ");
-				customerCartQuery.append("VALUES(" + productIds.get(i) + ", ");
-				customerCartQuery.append("'" + customer.getUsername() + "'); ");
+				prepStmtUpdateProduct.setString(1, customer.getPassword());
+				prepStmtUpdateProduct.setString(2, customer.getEmail());
+				prepStmtUpdateProduct.setString(3, customer.getFirstName());
+				prepStmtUpdateProduct.setString(4, customer.getLastName());
+				prepStmtUpdateProduct.setString(5, customer.getAddress());
+				prepStmtUpdateProduct.setString(6, customer.getPhoneNumber());
+				prepStmtUpdateProduct.setString(7, customer.getUsername());
+				prepStmtUpdateProduct.executeUpdate();
 
-				sql.query(customerCartQuery.toString());
-				customerCartQuery.delete(0, customerCartQuery.length());
+				prepStmtDeleteOldCart.setString(1, customer.getUsername());
+				prepStmtDeleteOldCart.executeUpdate();
+
+				final ArrayList<Integer> updatedCartList = customer.getShoppingCart();
+				final String customerUsername = customer.getUsername();
+				for (int productId : updatedCartList)
+				{
+					prepStmtInsertCartItem.setInt(1, productId);
+					prepStmtInsertCartItem.setString(2, customerUsername);
+					prepStmtInsertCartItem.executeUpdate();
+				}
+
+				con.commit();
+			}
+			catch (SQLException e)
+			{
+				con.rollback();
+				throw new RepositoryException("Could not update user!", e);
 			}
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not add Shopping cart IDs to Customer!", e);
+			throw new RepositoryException("Could not update user!", e);
 		}
 	}
 
 	@Override
 	public void removeCustomer(final String username) throws RepositoryException
 	{
-		try
-		{
-			StringBuilder removeQuery = new StringBuilder();
-			removeQuery.append("DELETE FROM " + DBConfig.DATABASE + "." + dbCustomer + " ");
-			removeQuery.append("WHERE user_name = '" + username + "';");
 
-			sql.query(removeQuery.toString());
+		final String removeQuery = "DELETE FROM " + customerTableName + " WHERE user_name = ?;";
+
+		try (Connection con = SQLConnector.getConnection();
+			 PreparedStatement prepStmtRemoveCustomer = con.prepareStatement(removeQuery))
+		{
+			prepStmtRemoveCustomer.setString(1, username);
+			prepStmtRemoveCustomer.executeUpdate();
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not query removal of Customer!", e);
-		}
-
-		try
-		{
-			StringBuilder removeCartItems = new StringBuilder();
-			removeCartItems.append("DELETE FROM " + DBConfig.DATABASE + "." + dbCustomerItems + " ");
-			removeCartItems.append("WHERE user_name = '" + username + "';");
-
-			sql.query(removeCartItems.toString());
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Could not query Customer Items deletion!", e);
+			throw new RepositoryException("Could not add Product to database!", e);
 		}
 	}
 }

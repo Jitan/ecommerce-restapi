@@ -11,29 +11,29 @@ import java.util.List;
 
 public class SQLProductRepository implements ProductRepository
 {
-	private final String dbTable = "product";
+	private final String productTableName = "product";
 
 	@Override
 	public void addProduct(final Product product) throws RepositoryException
 	{
 		final String addProductQuery =
-				"INSERT INTO " + dbTable + " "
+				"INSERT INTO " + productTableName + " "
 						+ "(id_product, title, category, manufacturer, description, img, price, "
 						+ "quantity) " + "VALUES(?, ?, ?, ?, ?, ?, ?, ?);";
 
 		try (Connection con = SQLConnector.getConnection();
-			 PreparedStatement ps = con.prepareStatement(addProductQuery))
+			 PreparedStatement prepStmtAddProduct = con.prepareStatement(addProductQuery))
 		{
-			ps.setInt(1, product.getId());
-			ps.setString(2, product.getTitle());
-			ps.setString(3, product.getCategory());
-			ps.setString(4, product.getManufacturer());
-			ps.setString(5, product.getDescription());
-			ps.setString(6, product.getImg());
-			ps.setDouble(7, product.getPrice());
-			ps.setInt(8, product.getQuantity());
+			prepStmtAddProduct.setInt(1, product.getId());
+			prepStmtAddProduct.setString(2, product.getTitle());
+			prepStmtAddProduct.setString(3, product.getCategory());
+			prepStmtAddProduct.setString(4, product.getManufacturer());
+			prepStmtAddProduct.setString(5, product.getDescription());
+			prepStmtAddProduct.setString(6, product.getImg());
+			prepStmtAddProduct.setDouble(7, product.getPrice());
+			prepStmtAddProduct.setInt(8, product.getQuantity());
 
-			ps.executeUpdate();
+			prepStmtAddProduct.executeUpdate();
 		}
 		catch (SQLException e)
 		{
@@ -44,12 +44,12 @@ public class SQLProductRepository implements ProductRepository
 	@Override
 	public Product getProduct(final int productID) throws RepositoryException
 	{
-		String getProductQuery = "SELECT * FROM " + dbTable + " WHERE id_product = ?;";
+		String getProductQuery = "SELECT * FROM " + productTableName + " WHERE id_product = ?;";
 		try (Connection con = SQLConnector.getConnection();
-			 PreparedStatement ps = con.prepareStatement(getProductQuery))
+			 PreparedStatement prepStmtGetProduct = con.prepareStatement(getProductQuery))
 		{
-			ps.setInt(1, productID);
-			ResultSet resultSet = ps.executeQuery();
+			prepStmtGetProduct.setInt(1, productID);
+			ResultSet resultSet = prepStmtGetProduct.executeQuery();
 
 			if (!resultSet.next())
 			{
@@ -82,13 +82,13 @@ public class SQLProductRepository implements ProductRepository
 	@Override
 	public List<Product> getProducts() throws RepositoryException
 	{
-		String getProductQuery = "SELECT * FROM " + dbTable + ";";
+		String getAllProductsQuery = "SELECT * FROM " + productTableName + ";";
 		List<Product> productList = new ArrayList<>();
 
 		try (Connection con = SQLConnector.getConnection();
-			 Statement statement = con.createStatement())
+			 Statement stmtGetProducts = con.createStatement())
 		{
-			ResultSet resultSet = statement.executeQuery(getProductQuery);
+			ResultSet resultSet = stmtGetProducts.executeQuery(getAllProductsQuery);
 
 			boolean resultSetIsEmpty = true;
 
@@ -125,13 +125,13 @@ public class SQLProductRepository implements ProductRepository
 	@Override
 	public void removeProduct(final int productID) throws RepositoryException
 	{
-		final String removeQuery = "DELETE FROM " + dbTable + " WHERE id_product = ?;";
+		final String removeProductQuery = "DELETE FROM " + productTableName + " WHERE id_product = ?;";
 
 		try (Connection con = SQLConnector.getConnection();
-			 PreparedStatement ps = con.prepareStatement(removeQuery))
+			 PreparedStatement prepStmtRemoveProduct = con.prepareStatement(removeProductQuery))
 		{
-			ps.setInt(1, productID);
-			ps.executeUpdate();
+			prepStmtRemoveProduct.setInt(1, productID);
+			prepStmtRemoveProduct.executeUpdate();
 		}
 		catch (SQLException e)
 		{
@@ -143,7 +143,7 @@ public class SQLProductRepository implements ProductRepository
 	public void updateProduct(Product product) throws RepositoryException
 	{
 		final String addProductQuery =
-				"UPDATE " + dbTable
+				"UPDATE " + productTableName
 						+ " SET title= ?, category = ?, manufacturer = ?, description = ?,"
 						+ " img = ?, price = ?, quantity = ? WHERE id_product = ?;";
 
@@ -170,13 +170,13 @@ public class SQLProductRepository implements ProductRepository
 	@Override
 	public int getHighestId() throws RepositoryException
 	{
-		final String highestIDQuery =
-				"SELECT MAX(id_product) FROM " + dbTable;
+		final String highestIdQuery =
+				"SELECT MAX(id_product) FROM " + productTableName;
 
 		try (Connection con = SQLConnector.getConnection();
-			 Statement statement = con.createStatement())
+			 Statement stmtGetHighestId = con.createStatement())
 		{
-			ResultSet resultSet = statement.executeQuery(highestIDQuery);
+			ResultSet resultSet = stmtGetHighestId.executeQuery(highestIdQuery);
 
 			if (!resultSet.next())
 			{
@@ -198,8 +198,9 @@ public class SQLProductRepository implements ProductRepository
 			throws RepositoryException
 	{
 		final String updateQuantityQuery =
-				"UPDATE " + dbTable + " SET quantity = quantity + ? WHERE id_product = ?;";
+				"UPDATE " + productTableName + " SET quantity = quantity + ? WHERE id_product = ?;";
 
+		// TODO Makes this a Batch Update within a transaction?
 		try (Connection con = SQLConnector.getConnection();
 			 PreparedStatement ps = con.prepareStatement(updateQuantityQuery))
 		{

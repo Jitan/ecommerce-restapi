@@ -56,7 +56,7 @@ public final class SQLConnector
 		catch (SQLException e)
 		{
 			throw new RepositoryException(
-					"Could not construct SQLProduct: Could not construct database object", e);
+					"Could not getConnection() from DriverManager", e);
 		}
 	}
 

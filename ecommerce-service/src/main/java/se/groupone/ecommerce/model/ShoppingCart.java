@@ -1,9 +1,9 @@
 package se.groupone.ecommerce.model;
 
+import se.groupone.ecommerce.exception.ModelException;
+
 import java.util.ArrayList;
 import java.util.Collections;
-
-import se.groupone.ecommerce.exception.ModelException;
 
 public class ShoppingCart
 {
@@ -28,7 +28,7 @@ public class ShoppingCart
 
 	/**
 	 * Removes all products with the specified id from this shopping cart.
-	 * 
+	 *
 	 * @param productId
 	 * @return true if a product was removed
 	 */

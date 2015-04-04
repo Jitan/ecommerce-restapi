@@ -1,22 +1,15 @@
 package se.groupone.ecommerce.test.webservice;
 
-import static se.groupone.ecommerce.test.webservice.ConnectionConfig.*;
+import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Test;
 import se.groupone.ecommerce.model.Customer;
 import se.groupone.ecommerce.model.Order;
 import se.groupone.ecommerce.model.Product;
 import se.groupone.ecommerce.model.ProductParameters;
-import se.groupone.ecommerce.webservice.util.CustomerMapper;
-import se.groupone.ecommerce.webservice.util.IntegerListMapper;
-import se.groupone.ecommerce.webservice.util.OrderMapper;
-import se.groupone.ecommerce.webservice.util.ProductMapper;
-import se.groupone.ecommerce.webservice.util.ProductParamMapper;
-import static org.junit.Assert.*;
-
-import java.lang.reflect.Type;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import se.groupone.ecommerce.webservice.util.*;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -24,17 +17,15 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.lang.reflect.Type;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.HashMap;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static se.groupone.ecommerce.test.webservice.ConnectionConfig.*;
 
 public class CustomerServiceTest
 {
@@ -201,7 +192,6 @@ public class CustomerServiceTest
 				.request()
 				.buildPost(Entity.entity(Integer.toString(PRODUCT_TOMATO.getId()), MediaType.APPLICATION_JSON))
 				.invoke();
-		System.out.println(addProductToCartResponse.readEntity(String.class));
 		assertEquals(201, addProductToCartResponse.getStatus());
 
 		// GET - Get cart contents
@@ -216,7 +206,7 @@ public class CustomerServiceTest
 		Gson gson = new GsonBuilder().registerTypeAdapter(integerListType, new IntegerListMapper.IntegerListAdapter())
 				.create();
 		
-		// Parse received shoppingartJson
+		// Parse received shoppingCartJson
 		JsonObject shoppingCartJsonObject = gson.fromJson(shoppingCartJson, JsonObject.class);
 		JsonArray cartJsonArray = shoppingCartJsonObject.get("integerArray").getAsJsonArray();
 		ArrayList<Integer> cartArrayList = gson.fromJson(cartJsonArray, integerListType);

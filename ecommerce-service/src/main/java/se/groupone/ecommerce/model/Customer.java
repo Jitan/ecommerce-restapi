@@ -1,8 +1,8 @@
 package se.groupone.ecommerce.model;
 
-import java.util.ArrayList;
-
 import se.groupone.ecommerce.exception.ModelException;
+
+import java.util.ArrayList;
 
 public final class Customer
 {
@@ -37,6 +37,11 @@ public final class Customer
 	public void addProductToShoppingCart(int productId)
 	{
 		shoppingCart.addProduct(productId);
+	}
+
+	public void replaceShoppingCart(ShoppingCart newShoppingCart)
+	{
+		shoppingCart = newShoppingCart;
 	}
 
 	public void removeProductFromShoppingCart(int productId) throws ModelException
