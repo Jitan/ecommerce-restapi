@@ -27,8 +27,7 @@ public final class Order
 	public Order(int id,
 			String customerUsername,
 			ArrayList<Integer> shoppingCartProductIds,
-			Date dateCreated,
-			Date dateShipped)
+			Date dateCreated)
 	{
 		this.id = id;
 		this.productIds = (ArrayList<Integer>) shoppingCartProductIds.clone();
@@ -96,8 +95,8 @@ public final class Order
 			if (this.getId() == o.getId()
 					&& this.getUsername().equals(o.getUsername())
 					&& this.getProductIds().equals(o.getProductIds())
-					&& sqlDateFormat.format(this.getDateCreated()).equals(sqlDateFormat.format(o.getDateCreated()))
-					&& this.isShipped() == o.isShipped())
+					&& sqlDateFormat.format(this.getDateCreated())
+					.equals(sqlDateFormat.format(o.getDateCreated())))
 			{
 				return true;
 			}

@@ -11,23 +11,8 @@ import java.util.List;
 
 public final class SQLCustomerRepository implements CustomerRepository
 {
-	private final SQLConnector sql;
 	private final String customerTableName = "customer";
 	private final String customerCartTableName = "customer_cart";
-
-	public SQLCustomerRepository() throws RepositoryException
-	{
-		try
-		{
-			sql = new SQLConnector(DBConfig.HOST, DBConfig.PORT, DBConfig.USERNAME,
-					DBConfig.PASSWORD, DBConfig.DATABASE);
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException(
-					"Could not construct SQLCustomer: Could not construct database object", e);
-		}
-	}
 
 	@Override
 	public void addCustomer(final Customer customer) throws RepositoryException
@@ -217,7 +202,8 @@ public final class SQLCustomerRepository implements CustomerRepository
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not update user!", e);
+			throw new RepositoryException(
+					"Could not get SQL Connection when trying to update user!", e);
 		}
 	}
 

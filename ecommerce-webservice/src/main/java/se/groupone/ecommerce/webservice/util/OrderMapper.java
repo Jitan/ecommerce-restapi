@@ -85,7 +85,6 @@ public final class OrderMapper implements MessageBodyWriter<Order>, MessageBodyR
 			}
 			orderJson.add("productIds", productIdsJsonArray);
 			orderJson.add("dateCreated", new JsonPrimitive(String.valueOf(order.getDateCreated())));
-			orderJson.add("dateShipped", new JsonPrimitive(String.valueOf(order.getDateShipped())));
 			return orderJson;
 		}
 

@@ -290,7 +290,6 @@ public class CustomerServiceTest
 				.request()
 				.buildPost(Entity.entity(Integer.toString(PRODUCT_TOMATO.getId()), MediaType.APPLICATION_JSON))
 				.invoke();
-		System.out.println(addProductsToCartResponse.readEntity(String.class));
 		assertEquals(201, addProductsToCartResponse.getStatus());
 
 		// POST - Create order

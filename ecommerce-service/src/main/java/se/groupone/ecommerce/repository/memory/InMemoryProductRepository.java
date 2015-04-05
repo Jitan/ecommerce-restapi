@@ -55,24 +55,4 @@ public class InMemoryProductRepository implements ProductRepository
 	{
 		return 0;
 	}
-
-	@Override
-	public void decreaseQuantityOfProductsByOne(List<Integer> ids)
-			throws RepositoryException
-	{
-		for (int productId : ids)
-		{
-			products.get(productId).decreaseQuantity(1);
-		}
-	}
-
-	@Override
-	public void increaseQuantityOfProductsByOne(List<Integer> ids)
-			throws RepositoryException
-	{
-		for (int productId : ids)
-		{
-			products.get(productId).increaseQuantity(1);
-		}
-	}
 }

@@ -17,10 +17,6 @@ public interface ProductRepository
 
 	public void updateProduct(Product product) throws RepositoryException;
 	
-	public void decreaseQuantityOfProductsByOne(List<Integer> ids) throws RepositoryException;
-	
-	public void increaseQuantityOfProductsByOne(List<Integer> ids) throws RepositoryException;
-	
 	public int getHighestId() throws RepositoryException;
 
 }

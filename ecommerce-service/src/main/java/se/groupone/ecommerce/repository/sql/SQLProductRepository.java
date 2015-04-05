@@ -16,6 +16,7 @@ public class SQLProductRepository implements ProductRepository
 	@Override
 	public void addProduct(final Product product) throws RepositoryException
 	{
+
 		final String addProductQuery =
 				"INSERT INTO " + productTableName + " "
 						+ "(id_product, title, category, manufacturer, description, img, price, "
@@ -194,38 +195,26 @@ public class SQLProductRepository implements ProductRepository
 		}
 	}
 
+	// TODO This is now unused and can be removed?
 	private void productsQuantityChange(final List<Integer> ids, final int quantityChange)
 			throws RepositoryException
 	{
 		final String updateQuantityQuery =
 				"UPDATE " + productTableName + " SET quantity = quantity + ? WHERE id_product = ?;";
 
-		// TODO Makes this a Batch Update within a transaction?
 		try (Connection con = SQLConnector.getConnection();
-			 PreparedStatement ps = con.prepareStatement(updateQuantityQuery))
+			 PreparedStatement prepStmtUpdateQuantity = con.prepareStatement(updateQuantityQuery))
 		{
 			for (int id : ids)
 			{
-				ps.setInt(1, quantityChange);
-				ps.setInt(2, id);
-				ps.executeUpdate();
+				prepStmtUpdateQuantity.setInt(1, quantityChange);
+				prepStmtUpdateQuantity.setInt(2, id);
+				prepStmtUpdateQuantity.executeUpdate();
 			}
 		}
 		catch (SQLException e)
 		{
 			throw new RepositoryException("Could not update Product quantity!", e);
 		}
-	}
-
-	@Override
-	public void decreaseQuantityOfProductsByOne(List<Integer> ids) throws RepositoryException
-	{
-		productsQuantityChange(ids, -1);
-	}
-
-	@Override
-	public void increaseQuantityOfProductsByOne(List<Integer> ids) throws RepositoryException
-	{
-		productsQuantityChange(ids, 1);
 	}
 }

@@ -1,7 +1,7 @@
 package se.groupone.ecommerce.service;
 
-import se.groupone.ecommerce.exception.ShopServiceException;
 import se.groupone.ecommerce.exception.RepositoryException;
+import se.groupone.ecommerce.exception.ShopServiceException;
 import se.groupone.ecommerce.model.Customer;
 import se.groupone.ecommerce.model.Order;
 import se.groupone.ecommerce.model.Product;
@@ -12,16 +12,12 @@ import se.groupone.ecommerce.repository.ProductRepository;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public final class ShopService
 {
 	private final CustomerRepository customerRepository;
 	private final ProductRepository productRepository;
 	private final OrderRepository orderRepository;
-
-	private final AtomicInteger productIDGenerator;
-	private final AtomicInteger orderIDGenerator;
 
 	public ShopService(CustomerRepository customerRepository,
 			ProductRepository productRepository,
@@ -30,16 +26,6 @@ public final class ShopService
 		this.customerRepository = customerRepository;
 		this.productRepository = productRepository;
 		this.orderRepository = orderRepository;
-		try
-		{
-			productIDGenerator = new AtomicInteger(productRepository.getHighestId());
-			orderIDGenerator = new AtomicInteger(orderRepository.getHighestId());
-		}
-		catch (RepositoryException e)
-		{
-			throw new ShopServiceException("Could not instantiate ShopService: "
-					+ e.getMessage(), e);
-		}
 	}
 
 	public Product addProduct(ProductParameters productParams)
@@ -47,7 +33,8 @@ public final class ShopService
 		Product newProduct;
 		try
 		{
-			newProduct = new Product(getNextProductId(), productParams);
+			int newProductId = productRepository.getHighestId() + 1;
+			newProduct = new Product(newProductId, productParams);
 			productRepository.addProduct(newProduct);
 		}
 		catch (RepositoryException e)
@@ -195,33 +182,14 @@ public final class ShopService
 			{
 				throw new ShopServiceException("This user has no items in their cart");
 			}
-			// decrease stock quantity of products in product repository
-			productRepository.decreaseQuantityOfProductsByOne(orderedProductIds);
-			try
-			{
-				// place a order containing the products removed from stock
-				int orderId = getNextOrderId();
-				newOrder = new Order(orderId, customerUsername, orderedProductIds);
-				orderRepository.addOrder(newOrder);
-				try
-				{
-					// clear the customers shopping cart
-					customer.getShoppingCart().clear();
-					customerRepository.updateCustomer(customer);
-				}
-				catch (RepositoryException e)
-				{
-					// FIXME Problem: om det går fel med återställningen i catch
-					// satserna, blir det fel i repot
-					orderRepository.removeOrder(orderId);
-					throw e;
-				}
-			}
-			catch (RepositoryException e)
-			{
-				productRepository.increaseQuantityOfProductsByOne(orderedProductIds);
-				throw e;
-			}
+
+			int newOrderId = orderRepository.getHighestId() + 1;
+
+			newOrder = new Order(newOrderId, customerUsername, orderedProductIds);
+			orderRepository.addOrder(newOrder);
+
+			customer.getShoppingCart().clear();
+			customerRepository.updateCustomer(customer);
 		}
 		catch (RepositoryException e)
 		{
@@ -234,8 +202,7 @@ public final class ShopService
 	{
 		try
 		{
-			Order order = orderRepository.getOrder(orderId);
-			return order;
+			return orderRepository.getOrder(orderId);
 		}
 		catch (RepositoryException e)
 		{
@@ -281,15 +248,5 @@ public final class ShopService
 		{
 			throw new ShopServiceException("Could not remove order: " + e.getMessage(), e);
 		}
-	}
-
-	private int getNextProductId()
-	{
-		return productIDGenerator.incrementAndGet();
-	}
-
-	private int getNextOrderId()
-	{
-		return orderIDGenerator.incrementAndGet();
 	}
 }
