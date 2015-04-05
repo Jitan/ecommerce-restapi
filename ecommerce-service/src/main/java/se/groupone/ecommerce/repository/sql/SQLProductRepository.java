@@ -38,24 +38,24 @@ public class SQLProductRepository implements ProductRepository
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not add Product to database!", e);
+			throw new RepositoryException("Could not add product to database!", e);
 		}
 	}
 
 	@Override
-	public Product getProduct(final int productID) throws RepositoryException
+	public Product getProduct(final int productId) throws RepositoryException
 	{
 		String getProductQuery = "SELECT * FROM " + productTableName + " WHERE id_product = ?;";
 		try (Connection con = SQLConnector.getConnection();
 			 PreparedStatement prepStmtGetProduct = con.prepareStatement(getProductQuery))
 		{
-			prepStmtGetProduct.setInt(1, productID);
+			prepStmtGetProduct.setInt(1, productId);
 			ResultSet resultSet = prepStmtGetProduct.executeQuery();
 
 			if (!resultSet.next())
 			{
 				throw new RepositoryException(
-						"No matches for Product with id: " + productID + " found in "
+						"No matches for product with id: " + productId + " found in "
 								+ "database!");
 			}
 			else
@@ -69,13 +69,13 @@ public class SQLProductRepository implements ProductRepository
 						resultSet.getDouble("price"),
 						resultSet.getInt("quantity"));
 
-				return new Product(productID, productParams);
+				return new Product(productId, productParams);
 			}
 		}
 		catch (SQLException e)
 		{
 			throw new RepositoryException(
-					"Failed to retrieve Product data for product with id: " + productID
+					"Failed to retrieve product data for product with id: " + productId
 							+ " from database!", e);
 		}
 	}
@@ -117,7 +117,7 @@ public class SQLProductRepository implements ProductRepository
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not fetch all Products from database!", e);
+			throw new RepositoryException("Could not fetch all products from database!", e);
 		}
 
 		return productList;
@@ -136,7 +136,7 @@ public class SQLProductRepository implements ProductRepository
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not add Product to database!", e);
+			throw new RepositoryException("Could not add product to database!", e);
 		}
 	}
 
@@ -164,7 +164,7 @@ public class SQLProductRepository implements ProductRepository
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not add Product to database!", e);
+			throw new RepositoryException("Could not add product to database!", e);
 		}
 	}
 
@@ -191,7 +191,7 @@ public class SQLProductRepository implements ProductRepository
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not get query highest Product ID!", e);
+			throw new RepositoryException("Could not get query highest product id!", e);
 		}
 	}
 
@@ -214,7 +214,7 @@ public class SQLProductRepository implements ProductRepository
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not update Product quantity!", e);
+			throw new RepositoryException("Could not update product quantity!", e);
 		}
 	}
 }

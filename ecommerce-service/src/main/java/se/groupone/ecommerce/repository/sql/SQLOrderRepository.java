@@ -66,7 +66,7 @@ public class SQLOrderRepository implements OrderRepository
 				prepStmtAddOrder.setString(2, order.getUsername());
 				prepStmtAddOrder.setString(3, sdf.format(order.getDateCreated()));
 				prepStmtAddOrder.executeUpdate();
-				
+
 				ArrayList<Integer> orderProductList = order.getProductIds();
 				for (int productId : orderProductList)
 				{
@@ -95,115 +95,59 @@ public class SQLOrderRepository implements OrderRepository
 	}
 
 	@Override
-	public Order getOrder(final int orderID) throws RepositoryException
+	public Order getOrder(final int orderId) throws RepositoryException
 	{
-		final String customerUserName;
-		Date dateOrderCreated;
-		Date dateOrderShipped;
-		ResultSet rs;
+		final String getOrderQuery = "SELECT customer_name, created FROM " + orderTableName
+				+ " WHERE id_order = ?;";
+		final String getProductsForOrderQuery = "SELECT id_product FROM " + productOrderTableName
+				+ " WHERE id_order = ?;";
+		final String customerName;
+		final Date dateCreated;
+		ArrayList<Integer> productIds = new ArrayList<>();
 
-		try
+		try (Connection con = SQLConnector.getConnection();
+			 PreparedStatement prepStmtGetOrder = con.prepareStatement(getOrderQuery);
+			 PreparedStatement prepStmtGetProductsForOrder =
+					 con.prepareStatement(getProductsForOrderQuery))
 		{
-			StringBuilder orderInfoQuery = new StringBuilder();
-			orderInfoQuery.append("SELECT customer_name, created, shipped FROM " + DBConfig
-					.DATABASE
-					+ "." + orderTableName
-					+ " ");
-			orderInfoQuery.append("WHERE id_order = " + orderID + ";");
+			ResultSet resultSet;
 
-			rs = sql.queryResult(orderInfoQuery.toString());
-			if (!rs.isBeforeFirst())
+			prepStmtGetOrder.setInt(1, orderId);
+			resultSet = prepStmtGetOrder.executeQuery();
+			if (!resultSet.next())
 			{
 				throw new RepositoryException(
-						"No matches for found for query: " + orderInfoQuery.toString());
+						"No matches for order with id: " + orderId + " found in database!");
 			}
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Could not query database for Order info!", e);
-		}
-
-		try
-		{
-			rs.next();
-			customerUserName = rs.getString("customer_name");
-			dateOrderCreated = rs.getDate("created");
-			rs.close();
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Could not parse SQL values!", e);
-		}
-
-		try
-		{
-			StringBuilder numOfItemIDsQuery = new StringBuilder();
-			numOfItemIDsQuery.append("SELECT count(id_product) FROM " + DBConfig.DATABASE + "."
-					+ productOrderTableName + " ");
-			numOfItemIDsQuery.append("WHERE id_order = " + orderID + ";");
-
-			rs = sql.queryResult(numOfItemIDsQuery.toString());
-			if (!rs.isBeforeFirst())
+			else
 			{
-				throw new RepositoryException(
-						"No matches for count(id_product) in database!\nSQL QUERY: "
-								+ numOfItemIDsQuery.toString());
+				customerName = resultSet.getString("customer_name");
+				dateCreated = resultSet.getDate("created");
 			}
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Could not count product IDs from OrderItems database!",
-					e);
-		}
 
-		final int numProductsInOrder;
-		try
-		{
-			rs.next();
-			numProductsInOrder = rs.getInt(1);
-			rs.close();
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Could not parse SQL values!", e);
-		}
+			prepStmtGetProductsForOrder.setInt(1, orderId);
+			resultSet = prepStmtGetProductsForOrder.executeQuery();
 
-		try
-		{
-			StringBuilder orderIDsQuery = new StringBuilder();
-			orderIDsQuery
-					.append("SELECT id_product FROM " + DBConfig.DATABASE + "."
-							+ productOrderTableName
-							+ " ");
-			orderIDsQuery.append("WHERE id_order = " + orderID + ";");
+			boolean resultSetIsEmpty = true;
 
-			rs = sql.queryResult(orderIDsQuery.toString());
-			if (!rs.isBeforeFirst())
+			while (resultSet.next())
 			{
-				throw new RepositoryException(
-						"No matches for orderID found in database!\nSQL QUERY: " + orderIDsQuery
-								.toString());
+				resultSetIsEmpty = false;
+				productIds.add(resultSet.getInt(1));
 			}
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Could not query CustomerUserName from Order!", e);
-		}
 
-		try
-		{
-			ArrayList<Integer> productIds = new ArrayList<>();
-			for (int i = 0; i < numProductsInOrder; i++)
+			if (resultSetIsEmpty)
 			{
-				rs.next();
-				productIds.add(rs.getInt(1));
+				throw new RepositoryException("No products in order with orderid: " + orderId);
 			}
-			rs.close();
-			return new Order(orderID, customerUserName, productIds, dateOrderCreated);
+
+			return new Order(orderId, customerName, productIds, dateCreated);
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not construct Order from database!", e);
+			throw new RepositoryException(
+					"Failed to retrieve order data for product with id: " + orderId
+							+ " from database!", e);
 		}
 	}
 

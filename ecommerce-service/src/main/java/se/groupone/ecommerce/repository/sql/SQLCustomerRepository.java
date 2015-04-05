@@ -37,7 +37,7 @@ public final class SQLCustomerRepository implements CustomerRepository
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not add Product to database!", e);
+			throw new RepositoryException("Could not add customer to database!", e);
 		}
 	}
 
@@ -63,7 +63,7 @@ public final class SQLCustomerRepository implements CustomerRepository
 			}
 
 			throw new RepositoryException(
-					"No matches for user: " + username + " found in database!");
+					"No matches for customer with username: " + username + " found in database!");
 		}
 		catch (SQLException e)
 		{
@@ -108,7 +108,7 @@ public final class SQLCustomerRepository implements CustomerRepository
 		catch (SQLException e)
 		{
 			throw new RepositoryException(
-					"Failed to retrieve customer shoppingCart for user with username: "
+					"Failed to retrieve customer shoppingCart for customer with username: "
 							+ username, e);
 		}
 	}
@@ -142,7 +142,7 @@ public final class SQLCustomerRepository implements CustomerRepository
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not fetch all Customers from database!", e);
+			throw new RepositoryException("Could not fetch all customers from database!", e);
 		}
 
 		return customerList;
@@ -203,7 +203,7 @@ public final class SQLCustomerRepository implements CustomerRepository
 		catch (SQLException e)
 		{
 			throw new RepositoryException(
-					"Could not get SQL Connection when trying to update user!", e);
+					"Could not get SQL connection when trying to update user!", e);
 		}
 	}
 
@@ -221,7 +221,7 @@ public final class SQLCustomerRepository implements CustomerRepository
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not add Product to database!", e);
+			throw new RepositoryException("Could not remove customer from database!", e);
 		}
 	}
 }
