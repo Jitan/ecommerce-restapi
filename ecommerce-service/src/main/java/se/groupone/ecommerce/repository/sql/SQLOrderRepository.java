@@ -4,10 +4,7 @@ import se.groupone.ecommerce.exception.RepositoryException;
 import se.groupone.ecommerce.model.Order;
 import se.groupone.ecommerce.repository.OrderRepository;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,22 +15,7 @@ public class SQLOrderRepository implements OrderRepository
 	private final String orderTableName = "`order`";
 	private final String productTableName = "product";
 	private final String productOrderTableName = "product_order";
-	private final SQLConnector sql;
 	private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-
-	public SQLOrderRepository() throws RepositoryException
-	{
-		try
-		{
-			sql = new SQLConnector(DBConfig.HOST, DBConfig.PORT, DBConfig.USERNAME,
-					DBConfig.PASSWORD, DBConfig.DATABASE);
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException(
-					"Could not construct SQLOrder: Could not construct database object", e);
-		}
-	}
 
 	@Override
 	public void addOrder(final Order order) throws RepositoryException
@@ -172,13 +154,15 @@ public class SQLOrderRepository implements OrderRepository
 	public List<Order> getOrders(final String customerUsername) throws RepositoryException
 	{
 		final String getOrderIdsQuery = "SELECT id_order FROM " + orderTableName
-				+ "WHERE customer_name = '" + customerUsername + "';";
+				+ "WHERE customer_name = ?;";
 
 		try (Connection con = SQLConnector.getConnection();
 			 PreparedStatement prepStmtGetOrderIdsQuery = con.prepareStatement(getOrderIdsQuery))
 		{
 			ResultSet resultSet;
 			ArrayList<Order> orderList = new ArrayList<>();
+
+			prepStmtGetOrderIdsQuery.setString(1, customerUsername);
 			resultSet = prepStmtGetOrderIdsQuery.executeQuery();
 
 			boolean resultSetIsEmpty = true;
@@ -203,109 +187,85 @@ public class SQLOrderRepository implements OrderRepository
 	}
 
 	@Override
-	public int getHighestId() throws RepositoryException
+	public void updateOrder(final Order order) throws RepositoryException
 	{
-		ResultSet rs;
-		try
+		final String dateCreatedString = sdf.format(order.getDateCreated());
+
+		final String updateOrderQuery = "UPDATE " + orderTableName + " SET "
+				+ "created = ? WHERE id_order = ?;";
+		final String deleteOrderItemsQuery =
+				"DELETE FROM " + productOrderTableName + " WHERE id_order = ?;";
+		final String addOrderItemQuery =
+				"INSERT INTO " + productOrderTableName + "(id_order, id_product) "
+				+ "VALUES(?, ?);";
+
+		try (Connection con = SQLConnector.getConnection())
 		{
-			final String highestOrderIDQuery =
-					"SELECT MAX(id_order) FROM " + DBConfig.DATABASE + "." + orderTableName;
-			rs = sql.queryResult(highestOrderIDQuery);
-			if (!rs.isBeforeFirst())
+			con.setAutoCommit(false);
+
+			try (PreparedStatement prepStmtUpdateOrder = con.prepareStatement(updateOrderQuery);
+				 PreparedStatement prepStmtDeleteOrderItems =
+						 con.prepareStatement(deleteOrderItemsQuery);
+				 PreparedStatement prepStmtAddOrderItem = con.prepareStatement(addOrderItemQuery))
 			{
-				throw new RepositoryException(
-						"No matches found for MAX(id_order) in Orders!\nSQL QUERY: "
-								+ highestOrderIDQuery.toString());
+
+				int orderId = order.getId();
+				ArrayList<Integer> orderProductList = order.getProductIds();
+
+				prepStmtUpdateOrder.setString(1, dateCreatedString);
+				prepStmtUpdateOrder.setInt(2, orderId);
+				prepStmtUpdateOrder.executeUpdate();
+
+				prepStmtDeleteOrderItems.setInt(1, orderId);
+				prepStmtDeleteOrderItems.executeUpdate();
+
+				for (int productId : orderProductList)
+				{
+					prepStmtAddOrderItem.setInt(1, orderId);
+					prepStmtAddOrderItem.setInt(2, productId);
+					prepStmtAddOrderItem.executeUpdate();
+				}
+
+				con.commit();
+			}
+			catch (SQLException e)
+			{
+				con.rollback();
+				throw new RepositoryException("Could not update order with id: " + order.getId(),
+						e);
 			}
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not get query MAX(id_order)!", e);
-		}
-
-		try
-		{
-			rs.next();
-			final int highestID = rs.getInt(1);
-			rs.close();
-			return highestID;
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Could not parse MAX(id_order)!", e);
+			throw new RepositoryException(
+					"Could not get SQL connection when trying to update order!", e);
 		}
 	}
 
 	@Override
-	public void updateOrder(final Order order) throws RepositoryException
+	public int getHighestId() throws RepositoryException
 	{
-		// Firstly, lets convert java.util.Date format into MYSQL DATE format
-		// String
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		final String sqlDateCreated = sdf.format(order.getDateCreated());
-		String sqlDateShipped;
-		if (order.getDateShipped() == null)
-		{
-			sqlDateShipped = sdf.format(new Date(0L));
-		}
-		else
-		{
-			sqlDateShipped = sdf.format(order.getDateShipped());
-		}
+		final String highestIdQuery =
+				"SELECT MAX(id_order) FROM " + orderTableName;
 
-		// Now lets update the orders created and shipped fields
-		try
+		try (Connection con = SQLConnector.getConnection();
+			 Statement stmtGetHighestId = con.createStatement())
 		{
-			StringBuilder updateTableOrderQuery = new StringBuilder();
-			updateTableOrderQuery
-					.append("UPDATE " + DBConfig.DATABASE + "." + orderTableName + " SET ");
-			updateTableOrderQuery.append("created = '" + sqlDateCreated + "', ");
-			updateTableOrderQuery.append("shipped = '" + sqlDateShipped + "' ");
-			updateTableOrderQuery.append("WHERE id_order = " + order.getId() + ";");
+			ResultSet resultSet = stmtGetHighestId.executeQuery(highestIdQuery);
 
-			sql.query(updateTableOrderQuery.toString());
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Could not query Order update!", e);
-		}
-
-		try
-		{
-			StringBuilder deleteOrderItemsQuery = new StringBuilder();
-			deleteOrderItemsQuery
-					.append("DELETE FROM " + DBConfig.DATABASE + "." + productOrderTableName + ""
-							+ " ");
-			deleteOrderItemsQuery.append("WHERE id_order = " + order.getId() + ";");
-
-			sql.query(deleteOrderItemsQuery.toString());
-		}
-		catch (SQLException e)
-		{
-			throw new RepositoryException("Could not delete Order items!", e);
-		}
-
-		ArrayList<Integer> productIDs = order.getProductIds();
-		try
-		{
-			StringBuilder toOrderItemsQuery = new StringBuilder();
-			for (int i = 0; i < productIDs.size(); i++)
+			if (!resultSet.next())
 			{
-				toOrderItemsQuery
-						.append("INSERT INTO " + DBConfig.DATABASE + "." + productOrderTableName
-								+ ""
-								+ " ");
-				toOrderItemsQuery.append("(id_order, id_product) ");
-				toOrderItemsQuery.append("VALUES(" + order.getId() + ", ");
-				toOrderItemsQuery.append("" + productIDs.get(i) + ");");
-
-				sql.query(toOrderItemsQuery.toString());
-				toOrderItemsQuery.delete(0, toOrderItemsQuery.length());
+				throw new RepositoryException("No orders in database!");
+			}
+			else
+			{
+				int highestId = resultSet.getInt(1);
+				return highestId;
 			}
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not add OrderIDs to Order! in database!", e);
+			throw new RepositoryException("Could not get highest order id!", e);
 		}
 	}
 }

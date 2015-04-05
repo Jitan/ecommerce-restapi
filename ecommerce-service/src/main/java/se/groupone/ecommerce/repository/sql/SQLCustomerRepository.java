@@ -151,7 +151,7 @@ public final class SQLCustomerRepository implements CustomerRepository
 	@Override
 	public void updateCustomer(final Customer customer) throws RepositoryException
 	{
-		final String addProductQuery =
+		final String updateCustomerQuery =
 				"UPDATE " + customerTableName
 						+ " SET password = ?, email = ?, first_name = ?, "
 						+ "last_name = ?, address = ? , phone = ? WHERE user_name = ?;";
@@ -165,20 +165,21 @@ public final class SQLCustomerRepository implements CustomerRepository
 		try (Connection con = SQLConnector.getConnection())
 		{
 			con.setAutoCommit(false);
-			try (PreparedStatement prepStmtUpdateProduct = con.prepareStatement(addProductQuery);
+			try (PreparedStatement prepStmtUpdateCustomer = con
+					.prepareStatement(updateCustomerQuery);
 				 PreparedStatement prepStmtDeleteOldCart =
 						 con.prepareStatement(deleteOldCartQuery);
 				 PreparedStatement prepStmtInsertCartItem = con
 						 .prepareStatement(insertNewCartItemQuery))
 			{
-				prepStmtUpdateProduct.setString(1, customer.getPassword());
-				prepStmtUpdateProduct.setString(2, customer.getEmail());
-				prepStmtUpdateProduct.setString(3, customer.getFirstName());
-				prepStmtUpdateProduct.setString(4, customer.getLastName());
-				prepStmtUpdateProduct.setString(5, customer.getAddress());
-				prepStmtUpdateProduct.setString(6, customer.getPhoneNumber());
-				prepStmtUpdateProduct.setString(7, customer.getUsername());
-				prepStmtUpdateProduct.executeUpdate();
+				prepStmtUpdateCustomer.setString(1, customer.getPassword());
+				prepStmtUpdateCustomer.setString(2, customer.getEmail());
+				prepStmtUpdateCustomer.setString(3, customer.getFirstName());
+				prepStmtUpdateCustomer.setString(4, customer.getLastName());
+				prepStmtUpdateCustomer.setString(5, customer.getAddress());
+				prepStmtUpdateCustomer.setString(6, customer.getPhoneNumber());
+				prepStmtUpdateCustomer.setString(7, customer.getUsername());
+				prepStmtUpdateCustomer.executeUpdate();
 
 				prepStmtDeleteOldCart.setString(1, customer.getUsername());
 				prepStmtDeleteOldCart.executeUpdate();
@@ -197,7 +198,9 @@ public final class SQLCustomerRepository implements CustomerRepository
 			catch (SQLException e)
 			{
 				con.rollback();
-				throw new RepositoryException("Could not update user!", e);
+				throw new RepositoryException(
+						"Could not update customer with username: " + customer.getUsername()
+								+ " !", e);
 			}
 		}
 		catch (SQLException e)

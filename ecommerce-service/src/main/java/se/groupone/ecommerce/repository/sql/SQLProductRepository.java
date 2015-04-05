@@ -191,7 +191,7 @@ public class SQLProductRepository implements ProductRepository
 		}
 		catch (SQLException e)
 		{
-			throw new RepositoryException("Could not get query highest product id!", e);
+			throw new RepositoryException("Could not get highest product id!", e);
 		}
 	}
 
